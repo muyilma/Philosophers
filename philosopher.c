@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/06/28 13:55:41 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/06/28 14:19:07 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 
 long	ft_atol(const char *str)
 {
+
+	
 	int		i;
 	long	val;
 	long	a;
