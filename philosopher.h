@@ -6,6 +6,8 @@
 typedef struct s_philo
 {
 	int				thread_no;
+	long			eat;
+	long			sleep;
 	long			time_to_die;
 	long			time_to_eat;
 	long			time_to_sleep;
