@@ -6,7 +6,7 @@ CFLAGS=
 all:$(NAME)
 
 $(NAME):$(SRC)
-	cc  -o $(NAME) $(CFLAGS)  $(SRC)
+	cc  -g  -o  $(NAME) $(CFLAGS)  $(SRC)
 
 clean:
 	rm -rf $(NAME)
