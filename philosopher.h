@@ -2,6 +2,7 @@
 # define PHILOSOPHER_H
 
 # include <pthread.h>
+#include <sys/time.h>
 
 typedef struct s_philo
 {
@@ -13,6 +14,7 @@ typedef struct s_philo
 	long			time_to_sleep;
 	pthread_t		thread;
 	pthread_mutex_t	mutex;
+	struct timeval  start_time;
 }					t_philo;
 
 #endif
