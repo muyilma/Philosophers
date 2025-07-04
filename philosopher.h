@@ -13,8 +13,11 @@ typedef struct s_philo
 	long			time_to_eat;
 	long			time_to_sleep;
 	pthread_t		thread;
-	pthread_mutex_t	mutex;
+	pthread_mutex_t	*left_fork;
+	pthread_mutex_t	*right_fork;	
 	struct timeval  start_time;
 }					t_philo;
+
+void	thread_start(t_philo **philo, int total_thread);
 
 #endif

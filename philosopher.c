@@ -16,18 +16,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-long	get_ms(t_philo *philo)
-{
-	struct timeval	now;
-	long			second;
-	long			m_second;
-
-	gettimeofday(&now,NULL);
-	second = now.tv_sec-philo->start_time.tv_sec;
-	m_second = now.tv_usec-philo->start_time.tv_usec;
-	return ((second * 1000) + (m_second/1000));
-}
-
 long	ft_atol(const char *str)
 {
 	int		i;
@@ -73,13 +61,18 @@ long	ft_numeric(const char *str)
 	return (1);
 }
 
-void	arg_create(int arg, char **args, t_philo ***philo)
+void	arg_create(char **args, t_philo ***philo)
 {
-	int	i;
-	int	size;
+	int				i;
+	int				size;
+	pthread_mutex_t	*fork;
 
 	size = ft_atol(args[1]);
 	*philo = malloc(sizeof(t_philo *) * (size + 1));
+	fork = malloc(sizeof(pthread_mutex_t) * size);
+	i = -1;
+	while (++i < size)
+		pthread_mutex_init(&fork[i], NULL);
 	i = 0;
 	while (i < size)
 	{
@@ -91,63 +84,11 @@ void	arg_create(int arg, char **args, t_philo ***philo)
 		(*philo)[i]->eat = 0;
 		(*philo)[i]->sleep = 0;
 		gettimeofday(&(*philo)[i]->start_time, NULL);
+		(*philo)[i]->left_fork = &fork[i];
+		(*philo)[i]->right_fork = &fork[(i + 1) % size];
 		i++;
 	}
 	(*philo)[i] = NULL;
-}
-
-void	eating(t_philo *philo)
-{
-	philo->eat++;
-	printf("%ld %d   has taken a fork\n",get_ms(philo), philo->thread_no);
-	printf("%ld %d   has taken a fork\n",get_ms(philo), philo->thread_no);
-	printf("%ld %d  is eating\n",get_ms(philo), philo->thread_no);
-	usleep(philo->time_to_eat);
-}
-
-void	sleeping(t_philo *philo)
-{
-	philo->sleep++;
-	printf("%ld %d  is sleeping\n",get_ms(philo), philo->thread_no);
-	usleep(philo->time_to_sleep);
-}
-
-void	*thread_loop(void *arg)
-{
-	t_philo	*philo;
-
-	philo = (t_philo *)arg;
-	while (1)
-	{
-		if (philo->thread_no % 2 != 0)
-		{
-			if (philo->sleep == philo->eat)
-			{
-				eating(philo);
-			}
-			else
-				sleeping(philo);
-		}
-		else
-		{
-			if (philo->sleep != philo->eat)
-				eating(philo);
-			else
-				sleeping(philo);
-		}
-	}
-}
-
-void	thread_start(t_philo **philo, int total_thread)
-{
-	int	i;
-
-	i = 0;
-	while (i < total_thread)
-	{
-		pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
-		i++;
-	}
 }
 
 int	main(int arg, char **args)
@@ -171,8 +112,6 @@ int	main(int arg, char **args)
 		}
 		i++;
 	}
-	arg_create(arg, args, &philo);
-	thread_start(philo, (int)atol(args[1]));
-	for (int i = 0; i < atol(args[1]); i++)
-        pthread_join(philo[i]->thread, NULL);
+	arg_create(args, &philo);
+
 }
