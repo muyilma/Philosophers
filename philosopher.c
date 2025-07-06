@@ -61,6 +61,23 @@ long	ft_numeric(const char *str)
 	return (1);
 }
 
+void	cleanup(t_philo **philo, pthread_mutex_t *forks, int size)
+{
+	int	i;
+
+	i = 0;
+	while (i < size)
+	{
+		pthread_mutex_destroy(&forks[i]);
+		pthread_mutex_destroy(&philo[i]->print_mutex);
+		pthread_mutex_destroy(&philo[i]->death_mutex);
+		free(philo[i]);
+		i++;
+	}
+	free(philo);
+	free(forks);
+}
+
 void	arg_create(char **args, t_philo ***philo)
 {
 	int				i;
@@ -70,9 +87,16 @@ void	arg_create(char **args, t_philo ***philo)
 	size = ft_atol(args[1]);
 	*philo = malloc(sizeof(t_philo *) * (size + 1));
 	fork = malloc(sizeof(pthread_mutex_t) * size);
-	i = -1;
-	while (++i < size)
+	
+	// Çatal mutex'lerini başlat
+	i = 0;
+	while (i < size)
+	{
 		pthread_mutex_init(&fork[i], NULL);
+		i++;
+	}
+	
+	// Filozofları oluştur
 	i = 0;
 	while (i < size)
 	{
@@ -83,9 +107,20 @@ void	arg_create(char **args, t_philo ***philo)
 		(*philo)[i]->time_to_sleep = ft_atol(args[4]) * 1000;
 		(*philo)[i]->eat = 0;
 		(*philo)[i]->sleep = 0;
+		(*philo)[i]->last_meal_time = 0;
+		(*philo)[i]->is_dead = 0;
+		
+		// Mutex'leri başlat
+		pthread_mutex_init(&(*philo)[i]->print_mutex, NULL);
+		pthread_mutex_init(&(*philo)[i]->death_mutex, NULL);
+		
+		// Zamanı kaydet
 		gettimeofday(&(*philo)[i]->start_time, NULL);
+		
+		// Çatalları ata
 		(*philo)[i]->left_fork = &fork[i];
 		(*philo)[i]->right_fork = &fork[(i + 1) % size];
+		
 		i++;
 	}
 	(*philo)[i] = NULL;
@@ -94,15 +129,17 @@ void	arg_create(char **args, t_philo ***philo)
 int	main(int arg, char **args)
 {
 	int		i;
+	int		size;
 	t_philo	**philo;
+	pthread_mutex_t	*forks;
 
-	i = 0;
 	if (!(arg == 5 || arg == 6))
 	{
 		printf("Wrong argument count\n");
 		return (1);
 	}
-	i++;
+	
+	i = 1;
 	while (args[i])
 	{
 		if (!ft_atol(args[i]) || !ft_numeric(args[i]))
@@ -112,6 +149,16 @@ int	main(int arg, char **args)
 		}
 		i++;
 	}
+	
 	arg_create(args, &philo);
-
+	size = ft_atol(args[1]);
+	
+	// Thread'leri başlat
+	thread_start(philo, size);
+	
+	// Bellek temizliği
+	forks = philo[0]->left_fork; // Fork pointer'ını al
+	cleanup(philo, forks, size);
+	
+	return (0);
 }
