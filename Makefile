@@ -1,7 +1,6 @@
 NAME=philo
 
 SRC=philosopher.c actions.c
-CFLAGS=-Wall -Wextra -Werror
 
 all:$(NAME)
 
