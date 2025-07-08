@@ -14,23 +14,47 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-long	get_ms(t_philo *philo)
+long get_ms(t_philo *philo)
 {
-	struct timeval	now;
-	long			second;
-	long			m_second;
-
-	gettimeofday(&now, NULL);
-	second = now.tv_sec - philo->start_time.tv_sec;
-	m_second = now.tv_usec - philo->start_time.tv_usec;
-	return ((second * 1000) + (m_second / 1000));
+    struct timeval now;
+    long seconds;
+    long useconds;
+    
+    gettimeofday(&now, NULL);
+    seconds = now.tv_sec - philo->start_time.tv_sec;
+    useconds = now.tv_usec - philo->start_time.tv_usec;
+    return (seconds * 1000) + (useconds / 1000);
 }
+void	ms_usleep(size_t ms,t_philo *philo)
+{
+	size_t	timeing;
 
+	timeing = get_ms(philo);
+	while (get_ms(philo)- timeing< ms)
+	{
+		usleep(100);
+	}
+} 
 void	print_status(t_philo *philo, char *status)
 {
 	pthread_mutex_lock(&philo->print_mutex);
+	// Eğer "died" mesajı ise yazdır, sonra is_dead flag'ini set et
+	if (strcmp(status, "died") == 0) // BURAYI FT_STRCMP İLE DEĞİŞTİR
+	{
+		printf("%ld %d %s\n", get_ms(philo), philo->thread_no, status);
+		philo->is_dead = 1;
+		pthread_mutex_unlock(&philo->print_mutex);
+		return ;
+	}
+	// Herhangi bir filosof öldüyse diğer mesajları yazdırma
+	if (philo->is_dead)
+	{
+		pthread_mutex_unlock(&philo->print_mutex);
+		return ;
+	}
 	printf("%ld %d %s\n", get_ms(philo), philo->thread_no, status);
 	pthread_mutex_unlock(&philo->print_mutex);
 }
@@ -40,17 +64,13 @@ void	eating(t_philo *philo)
 	// Çatalları mutex ile güvenli şekilde al
 	pthread_mutex_lock(philo->left_fork);
 	print_status(philo, "has taken a fork");
-	
 	pthread_mutex_lock(philo->right_fork);
 	print_status(philo, "has taken a fork");
-	
 	// Yemek yeme
-	philo->eat++;
 	philo->last_meal_time = get_ms(philo);
 	print_status(philo, "is eating");
-	
-	usleep(philo->time_to_eat);
-	
+	philo->eat++;
+	ms_usleep(philo->time_to_eat,philo);
 	// Çatalları bırak
 	pthread_mutex_unlock(philo->right_fork);
 	pthread_mutex_unlock(philo->left_fork);
@@ -60,14 +80,12 @@ void	sleeping(t_philo *philo)
 {
 	philo->sleep++;
 	print_status(philo, "is sleeping");
-	usleep(philo->time_to_sleep);
+	ms_usleep(philo->time_to_sleep,philo);
 }
 
 void	thinking(t_philo *philo)
 {
 	print_status(philo, "is thinking");
-	// Thinking için küçük bir bekleme süresi
-	usleep(1000); // 1ms
 }
 
 int	check_death(t_philo *philo)
@@ -78,9 +96,10 @@ int	check_death(t_philo *philo)
 		pthread_mutex_unlock(&philo->death_mutex);
 		return (1);
 	}
-	
-	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die / 1000)
+	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die )
 	{
+		// printf("BURADA OLDU:%ld - lmt(%ld) > ttd(%ld)\n", get_ms(philo),
+			// philo->last_meal_time, philo->time_to_die / 1000);
 		philo->is_dead = 1;
 		pthread_mutex_unlock(&philo->death_mutex);
 		print_status(philo, "died");
@@ -90,36 +109,43 @@ int	check_death(t_philo *philo)
 	return (0);
 }
 
+
 void	*thread_loop(void *arg)
 {
 	t_philo	*philo;
 
 	philo = (t_philo *)arg;
 	
-	// Tek numaralı filozoflar biraz bekleyerek başlar (deadlock önleme)
-	if (philo->thread_no % 2 == 0)
-		usleep(1000);
+	// ÖNEMLİ: Thread başladığında last_meal_time'ı şu anki zamana ayarla
+	philo->last_meal_time = get_ms(philo);
 	
-	while (!check_death(philo))
+	while (1)
 	{
-		// Yemek ye
-		eating(philo);
-		
-		// Ölüm kontrolü
-		if (check_death(philo))
-			break;
-		
-		// Uyku
-		sleeping(philo);
-		
-		// Ölüm kontrolü
-		if (check_death(philo))
-			break;
-		
-		// Düşünme
-		thinking(philo);
+		if (philo->thread_no % 2 != 0)
+		{
+			if (philo->sleep == philo->eat)
+				eating(philo);
+			else
+			{
+				sleeping(philo);
+				thinking(philo);
+			}
+			if (check_death(philo))
+				return ((void *)1);
+		}
+		else
+		{
+			if (philo->sleep != philo->eat)
+				eating(philo);
+			else
+			{
+				sleeping(philo);
+				thinking(philo);
+			}
+			if (check_death(philo))
+				return ((void *)1);
+		}
 	}
-	
 	return (NULL);
 }
 
@@ -131,48 +157,58 @@ void	*death_monitor(void *arg)
 
 	philo = (t_philo **)arg;
 	total_thread = 0;
-	
-	// Toplam thread sayısını bul
 	while (philo[total_thread])
 		total_thread++;
-	
 	while (1)
 	{
 		i = 0;
 		while (i < total_thread)
 		{
 			if (check_death(philo[i]))
-				return (NULL);
+				return ((void *)1);
 			i++;
 		}
-		usleep(1000); // 1ms bekle
+		ms_usleep(1,*philo);
 	}
-	return (NULL);
+	return ((void *)0);
 }
 
 void	thread_start(t_philo **philo, int total_thread)
 {
-	int			i;
-	pthread_t	monitor_thread;
+	int i;
+	pthread_t monitor_thread;
+	void *exit_code;
+	int exit_c;
 
 	i = 0;
-	// Tüm threadleri başlat
-	while (i < total_thread)
+	if (total_thread % 2 == 0)
 	{
-		pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
-		i++;
+		while (i < total_thread)
+		{
+			pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
+			i++;
+		}
 	}
-	
-	// Ölüm monitörü threadini başlat
+
 	pthread_create(&monitor_thread, NULL, death_monitor, philo);
-	
-	// Tüm threadlerin bitmesini bekle
+
 	i = 0;
 	while (i < total_thread)
 	{
-		pthread_join(philo[i]->thread, NULL);
+		pthread_join(philo[i]->thread, &philo[i]->exit_code);
+		if ((int)(__intptr_t)philo[i]->exit_code == 1)
+		{
+			// printf("--------\n");
+			exit(1);
+		}
 		i++;
 	}
-	
-	pthread_join(monitor_thread, NULL);
+
+	pthread_join(monitor_thread, &exit_code);
+	exit_c = (int)(__intptr_t)exit_code;
+	if (exit_c == 1)
+	{
+		// printf("AAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+		exit(1);
+	}
 }

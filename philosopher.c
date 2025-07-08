@@ -102,9 +102,9 @@ void	arg_create(char **args, t_philo ***philo)
 	{
 		(*philo)[i] = malloc(sizeof(t_philo));
 		(*philo)[i]->thread_no = i + 1;
-		(*philo)[i]->time_to_die = ft_atol(args[2]) * 1000;
-		(*philo)[i]->time_to_eat = ft_atol(args[3]) * 1000;
-		(*philo)[i]->time_to_sleep = ft_atol(args[4]) * 1000;
+		(*philo)[i]->time_to_die = ft_atol(args[2]) ;
+		(*philo)[i]->time_to_eat = ft_atol(args[3]) ;
+		(*philo)[i]->time_to_sleep = ft_atol(args[4]);
 		(*philo)[i]->eat = 0;
 		(*philo)[i]->sleep = 0;
 		(*philo)[i]->last_meal_time = 0;

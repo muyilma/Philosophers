@@ -14,6 +14,7 @@ typedef struct s_philo
 	long			time_to_sleep;
 	long			last_meal_time;
 	int				is_dead;
+	void			*exit_code;
 	pthread_t		thread;
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*right_fork;
@@ -22,12 +23,12 @@ typedef struct s_philo
 	struct timeval	start_time;
 }					t_philo;
 
-void	thread_start(t_philo **philo, int total_thread);
-long	get_ms(t_philo *philo);
-void	print_status(t_philo *philo, char *status);
-void	eating(t_philo *philo);
-void	sleeping(t_philo *philo);
-void	thinking(t_philo *philo);
-int		check_death(t_philo *philo);
+void				thread_start(t_philo **philo, int total_thread);
+long				get_ms(t_philo *philo);
+void				print_status(t_philo *philo, char *status);
+void				eating(t_philo *philo);
+void				sleeping(t_philo *philo);
+void				thinking(t_philo *philo);
+int					check_death(t_philo *philo);
 
-#endif
+#endif 
