@@ -87,7 +87,6 @@ void	arg_create(char **args, t_philo ***philo)
 	size = ft_atol(args[1]);
 	*philo = malloc(sizeof(t_philo *) * (size + 1));
 	fork = malloc(sizeof(pthread_mutex_t) * size);
-	
 	// Çatal mutex'lerini başlat
 	i = 0;
 	while (i < size)
@@ -95,32 +94,27 @@ void	arg_create(char **args, t_philo ***philo)
 		pthread_mutex_init(&fork[i], NULL);
 		i++;
 	}
-	
 	// Filozofları oluştur
 	i = 0;
 	while (i < size)
 	{
 		(*philo)[i] = malloc(sizeof(t_philo));
 		(*philo)[i]->thread_no = i + 1;
-		(*philo)[i]->time_to_die = ft_atol(args[2]) ;
-		(*philo)[i]->time_to_eat = ft_atol(args[3]) ;
+		(*philo)[i]->time_to_die = ft_atol(args[2]);
+		(*philo)[i]->time_to_eat = ft_atol(args[3]);
 		(*philo)[i]->time_to_sleep = ft_atol(args[4]);
 		(*philo)[i]->eat = 0;
 		(*philo)[i]->sleep = 0;
 		(*philo)[i]->last_meal_time = 0;
 		(*philo)[i]->is_dead = 0;
-		
 		// Mutex'leri başlat
 		pthread_mutex_init(&(*philo)[i]->print_mutex, NULL);
 		pthread_mutex_init(&(*philo)[i]->death_mutex, NULL);
-		
 		// Zamanı kaydet
 		gettimeofday(&(*philo)[i]->start_time, NULL);
-		
 		// Çatalları ata
 		(*philo)[i]->left_fork = &fork[i];
 		(*philo)[i]->right_fork = &fork[(i + 1) % size];
-		
 		i++;
 	}
 	(*philo)[i] = NULL;
@@ -128,17 +122,19 @@ void	arg_create(char **args, t_philo ***philo)
 
 int	main(int arg, char **args)
 {
-	int		i;
-	int		size;
-	t_philo	**philo;
-	pthread_mutex_t	*forks;
+	int i;
+	int size;
+	t_philo **philo;
+	pthread_mutex_t *forks;
+	int status;
 
+	status=0;
 	if (!(arg == 5 || arg == 6))
 	{
 		printf("Wrong argument count\n");
 		return (1);
 	}
-	
+
 	i = 1;
 	while (args[i])
 	{
@@ -149,16 +145,16 @@ int	main(int arg, char **args)
 		}
 		i++;
 	}
-	
+
 	arg_create(args, &philo);
 	size = ft_atol(args[1]);
-	
 	// Thread'leri başlat
-	thread_start(philo, size);
-	
+	status=thread_start(philo, size);
+	if (status==1)
+		return 1;
 	// Bellek temizliği
 	forks = philo[0]->left_fork; // Fork pointer'ını al
 	cleanup(philo, forks, size);
-	
+
 	return (0);
 }

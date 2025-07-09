@@ -23,7 +23,7 @@ typedef struct s_philo
 	struct timeval	start_time;
 }					t_philo;
 
-void				thread_start(t_philo **philo, int total_thread);
+int				thread_start(t_philo **philo, int total_thread);
 long				get_ms(t_philo *philo);
 void				print_status(t_philo *philo, char *status);
 void				eating(t_philo *philo);

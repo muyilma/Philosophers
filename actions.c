@@ -17,27 +17,32 @@
 #include <string.h>
 #include <unistd.h>
 
-long get_ms(t_philo *philo)
+long	get_ms(t_philo *philo)
 {
-    struct timeval now;
-    long seconds;
-    long useconds;
-    
-    gettimeofday(&now, NULL);
-    seconds = now.tv_sec - philo->start_time.tv_sec;
-    useconds = now.tv_usec - philo->start_time.tv_usec;
-    return (seconds * 1000) + (useconds / 1000);
+	struct timeval	now;
+	long			seconds;
+	long			useconds;
+
+	gettimeofday(&now, NULL);
+	seconds = now.tv_sec - philo->start_time.tv_sec;
+	useconds = now.tv_usec - philo->start_time.tv_usec;
+	return (seconds * 1000) + (useconds / 1000);
 }
-void	ms_usleep(size_t ms,t_philo *philo)
+long	ms_usleep(size_t ms, t_philo *philo)
 {
 	size_t	timeing;
 
 	timeing = get_ms(philo);
-	while (get_ms(philo)- timeing< ms)
+	while (get_ms(philo) - timeing < ms)
 	{
+		if (check_death(philo))
+			return (1);
 		usleep(100);
 	}
-} 
+	if (check_death(philo))
+		return (1);
+	return (0);
+}
 void	print_status(t_philo *philo, char *status)
 {
 	pthread_mutex_lock(&philo->print_mutex);
@@ -70,7 +75,7 @@ void	eating(t_philo *philo)
 	philo->last_meal_time = get_ms(philo);
 	print_status(philo, "is eating");
 	philo->eat++;
-	ms_usleep(philo->time_to_eat,philo);
+	ms_usleep(philo->time_to_eat, philo);
 	// Çatalları bırak
 	pthread_mutex_unlock(philo->right_fork);
 	pthread_mutex_unlock(philo->left_fork);
@@ -80,7 +85,7 @@ void	sleeping(t_philo *philo)
 {
 	philo->sleep++;
 	print_status(philo, "is sleeping");
-	ms_usleep(philo->time_to_sleep,philo);
+	ms_usleep(philo->time_to_sleep, philo);
 }
 
 void	thinking(t_philo *philo)
@@ -96,10 +101,10 @@ int	check_death(t_philo *philo)
 		pthread_mutex_unlock(&philo->death_mutex);
 		return (1);
 	}
-	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die )
+	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die)
 	{
-		// printf("BURADA OLDU:%ld - lmt(%ld) > ttd(%ld)\n", get_ms(philo),
-			// philo->last_meal_time, philo->time_to_die / 1000);
+		//  printf("BURADA OLDU:%ld - lmt(%ld) > ttd(%ld)\n", get_ms(philo),
+		// 		philo->last_meal_time, philo->time_to_die / 1000);
 		philo->is_dead = 1;
 		pthread_mutex_unlock(&philo->death_mutex);
 		print_status(philo, "died");
@@ -109,16 +114,11 @@ int	check_death(t_philo *philo)
 	return (0);
 }
 
-
 void	*thread_loop(void *arg)
 {
 	t_philo	*philo;
 
 	philo = (t_philo *)arg;
-	
-	// ÖNEMLİ: Thread başladığında last_meal_time'ı şu anki zamana ayarla
-	philo->last_meal_time = get_ms(philo);
-	
 	while (1)
 	{
 		if (philo->thread_no % 2 != 0)
@@ -130,8 +130,6 @@ void	*thread_loop(void *arg)
 				sleeping(philo);
 				thinking(philo);
 			}
-			if (check_death(philo))
-				return ((void *)1);
 		}
 		else
 		{
@@ -142,8 +140,6 @@ void	*thread_loop(void *arg)
 				sleeping(philo);
 				thinking(philo);
 			}
-			if (check_death(philo))
-				return ((void *)1);
 		}
 	}
 	return (NULL);
@@ -168,47 +164,31 @@ void	*death_monitor(void *arg)
 				return ((void *)1);
 			i++;
 		}
-		ms_usleep(1,*philo);
+		usleep(100);
 	}
 	return ((void *)0);
 }
 
-void	thread_start(t_philo **philo, int total_thread)
+int	thread_start(t_philo **philo, int total_thread)
 {
-	int i;
-	pthread_t monitor_thread;
-	void *exit_code;
-	int exit_c;
+	int			i;
+	pthread_t	monitor_thread;
+	void		*exit_code;
+	int			exit_c;
 
-	i = 0;
+	i = -1;
 	if (total_thread % 2 == 0)
 	{
-		while (i < total_thread)
-		{
+		while (++i < total_thread)
 			pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
-			i++;
-		}
 	}
-
 	pthread_create(&monitor_thread, NULL, death_monitor, philo);
-
-	i = 0;
-	while (i < total_thread)
-	{
-		pthread_join(philo[i]->thread, &philo[i]->exit_code);
-		if ((int)(__intptr_t)philo[i]->exit_code == 1)
-		{
-			// printf("--------\n");
-			exit(1);
-		}
-		i++;
-	}
-
 	pthread_join(monitor_thread, &exit_code);
 	exit_c = (int)(__intptr_t)exit_code;
 	if (exit_c == 1)
-	{
-		// printf("AAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-		exit(1);
-	}
+		return (1);
+	i = -1;
+	while (++i < total_thread)
+		pthread_join(philo[i]->thread, NULL);
+	return (0);
 }
