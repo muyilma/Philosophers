@@ -1,5 +1,5 @@
 NAME=philo
-
+CFLAGS=-Wall -Wextra -Werror
 SRC=philosopher.c actions.c
 
 all:$(NAME)
