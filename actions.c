@@ -164,6 +164,13 @@ void	*death_monitor(void *arg)
 				return ((void *)1);
 			i++;
 		}
+		i = 0;
+		while (philo[i]->meat_eat != -1 && philo[i]->meat_eat <= philo[i]->eat)
+		{
+			if (i == total_thread - 1)
+				return ((void *)1);
+			i++;
+		}
 		usleep(100);
 	}
 	return ((void *)0);
