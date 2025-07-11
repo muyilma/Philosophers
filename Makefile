@@ -1,6 +1,6 @@
 NAME=philo
-CFLAGS=-Wall -Wextra -Werror
-SRC=philosopher.c actions.c
+CFLAGS=-Wall -Wextra -Werror #-fsanitize=thread
+SRC=philosopher.c actions.c utils.c
 
 all:$(NAME)
 

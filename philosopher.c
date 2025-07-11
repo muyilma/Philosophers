@@ -69,7 +69,6 @@ void	cleanup(t_philo **philo, pthread_mutex_t *forks, int size)
 	while (i < size)
 	{
 		pthread_mutex_destroy(&forks[i]);
-		pthread_mutex_destroy(&philo[i]->print_mutex);
 		pthread_mutex_destroy(&philo[i]->death_mutex);
 		free(philo[i]);
 		i++;
@@ -98,15 +97,13 @@ void	arg_create(char **args, t_philo ***philo)
 		(*philo)[i]->time_to_die = ft_atol(args[2]);
 		(*philo)[i]->time_to_eat = ft_atol(args[3]);
 		(*philo)[i]->time_to_sleep = ft_atol(args[4]);
-		if (args[5]==NULL)
+		if (args[5] == NULL)
 			(*philo)[i]->meat_eat = -1;
 		else
 			(*philo)[i]->meat_eat = ft_atol(args[5]);
 		(*philo)[i]->eat = 0;
-		(*philo)[i]->sleep = 0;
 		(*philo)[i]->last_meal_time = 0;
 		(*philo)[i]->is_dead = 0;
-		pthread_mutex_init(&(*philo)[i]->print_mutex, NULL);
 		pthread_mutex_init(&(*philo)[i]->death_mutex, NULL);
 		gettimeofday(&(*philo)[i]->start_time, NULL);
 		(*philo)[i]->left_fork = &fork[i];
@@ -118,13 +115,13 @@ void	arg_create(char **args, t_philo ***philo)
 
 int	main(int arg, char **args)
 {
-	int i;
-	int size;
-	t_philo **philo;
-	pthread_mutex_t *forks;
-	int status;
+	int				i;
+	int				size;
+	t_philo			**philo;
+	pthread_mutex_t	*forks;
+	int				status;
 
-	status=0;
+	status = 0;
 	if (!(arg == 5 || arg == 6))
 	{
 		printf("Wrong argument count\n");
@@ -142,11 +139,10 @@ int	main(int arg, char **args)
 	}
 	arg_create(args, &philo);
 	size = ft_atol(args[1]);
-	status=thread_start(philo, size);
-	if (status==1)
-		return 1;
+	status = thread_start(philo, size);
+	if (status == 1)
+		return (1);
 	forks = philo[0]->left_fork; // Fork pointer'ını al
 	cleanup(philo, forks, size);
-
 	return (0);
 }
