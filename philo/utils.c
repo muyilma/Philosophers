@@ -69,9 +69,9 @@ int	ft_must_eat(t_philo *philo)
 
 void	*death_monitor(void *arg)
 {
-	t_philo **philo;
-	int i;
-	int total_thread;
+	t_philo	**philo;
+	int		i;
+	int		total_thread;
 
 	philo = (t_philo **)arg;
 	total_thread = 0;
@@ -79,19 +79,17 @@ void	*death_monitor(void *arg)
 		total_thread++;
 	while (1)
 	{
-		i = 0;
-		while (i < total_thread)
+		i = -1;
+		while (++i < total_thread)
 		{
 			if (check_death(philo[i]))
 				return ((void *)1);
-			i++;
 		}
-		i = 0;
-		while (ft_must_eat(philo[i]))
+		i = -1;
+		while (++i < total_thread && ft_must_eat(philo[i]))//ekleme yapıldı
 		{
-			if (i == total_thread - 1)
+			if (++i == total_thread - 1)
 				return ((void *)1);
-			i++;
 		}
 		usleep(100);
 	}

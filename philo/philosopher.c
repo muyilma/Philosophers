@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/12 15:01:01 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/12 20:14:10 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,8 @@ void	cleanup(t_philo **philo, pthread_mutex_t *forks, int size)
 		free(philo[i]);
 		i++;
 	}
-	pthread_mutex_destroy(&philo[0]->gen->death_mutex);
+	// pthread_mutex_destroy(&philo.gen->death_mutex);
+	// pthread_mutex_destroy(&philo[0]>gen->death_mutex);
 	free(philo);
 	free(forks);
 }
