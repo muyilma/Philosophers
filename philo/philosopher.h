@@ -13,19 +13,25 @@ typedef struct s_philo
 	long			time_to_sleep;
 	long			last_meal_time;
 	long			meat_eat;
-	int				is_dead;
 	pthread_t		thread;
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*right_fork;
-	pthread_mutex_t	death_mutex;
-
+	struct s_general		*gen;
 	struct timeval	start_time;
 }					t_philo;
+
+typedef struct s_general
+{
+	pthread_mutex_t	death_mutex;
+	int				someone_died;
+	t_philo			**philo;
+}					t_general;
 
 int					thread_start(t_philo **philo, int total_thread);
 int					check_death(t_philo *philo);
 void				*death_monitor(void *arg);
-long	get_ms(t_philo *philo);
-long	ms_usleep(size_t ms, t_philo *philo);
+long				get_ms(t_philo *philo);
+long				ms_usleep(size_t ms, t_philo *philo);
+int					ft_must_eat(t_philo *philo);
 
 #endif

@@ -16,58 +16,62 @@ long	get_ms(t_philo *philo)
 	useconds = now.tv_usec - philo->start_time.tv_usec;
 	return (seconds * 1000) + (useconds / 1000);
 }
+
 long	ms_usleep(size_t ms, t_philo *philo)
 {
-	size_t	timeing;
+	size_t	timing;
 
-	timeing = get_ms(philo);
-	while (get_ms(philo) - timeing < ms)
+	timing = get_ms(philo);
+	while (get_ms(philo) - timing < ms)
 	{
-		// if (check_death(philo))
-		// return (1);
+		pthread_mutex_lock(&philo->gen->death_mutex);
+		if (philo->gen->someone_died)
+		{
+			pthread_mutex_unlock(&philo->gen->death_mutex);
+			return (1);
+		}
+		pthread_mutex_unlock(&philo->gen->death_mutex);
 		usleep(100);
 	}
-	// if (check_death(philo))
-	// return (1);
 	return (0);
 }
 
 int	check_death(t_philo *philo)
 {
-	pthread_mutex_lock(&philo->death_mutex);
-	if (philo->is_dead)
+	pthread_mutex_lock(&philo->gen->death_mutex);
+	if (philo->gen->someone_died)
 	{
-		pthread_mutex_unlock(&philo->death_mutex);
+		pthread_mutex_unlock(&philo->gen->death_mutex);
 		return (1);
 	}
 	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die)
 	{
-		philo->is_dead = 1;
+		philo->gen->someone_died = 1;
 		printf("%ld %d %s\n", get_ms(philo), philo->thread_no, "died");
-		pthread_mutex_unlock(&philo->death_mutex);
+		pthread_mutex_unlock(&philo->gen->death_mutex);
 		return (1);
 	}
-	pthread_mutex_unlock(&philo->death_mutex);
+	pthread_mutex_unlock(&philo->gen->death_mutex);
 	return (0);
 }
 
 int	ft_must_eat(t_philo *philo)
 {
-	pthread_mutex_lock(&philo->death_mutex);
+	pthread_mutex_lock(&philo->gen->death_mutex);
 	if (philo->meat_eat != -1 && (philo->meat_eat <= philo->eat))
 	{
-		pthread_mutex_unlock(&philo->death_mutex);
+		pthread_mutex_unlock(&philo->gen->death_mutex);
 		return (1);
 	}
-	pthread_mutex_unlock(&philo->death_mutex);
+	pthread_mutex_unlock(&philo->gen->death_mutex);
 	return (0);
 }
 
 void	*death_monitor(void *arg)
 {
-	t_philo	**philo;
-	int		i;
-	int		total_thread;
+	t_philo **philo;
+	int i;
+	int total_thread;
 
 	philo = (t_philo **)arg;
 	total_thread = 0;
@@ -93,4 +97,3 @@ void	*death_monitor(void *arg)
 	}
 	return ((void *)0);
 }
-

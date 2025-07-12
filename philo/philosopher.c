@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/06/29 19:16:46 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/12 15:01:01 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,57 +69,58 @@ void	cleanup(t_philo **philo, pthread_mutex_t *forks, int size)
 	while (i < size)
 	{
 		pthread_mutex_destroy(&forks[i]);
-		pthread_mutex_destroy(&philo[i]->death_mutex);
 		free(philo[i]);
 		i++;
 	}
+	pthread_mutex_destroy(&philo[0]->gen->death_mutex);
 	free(philo);
 	free(forks);
 }
 
-void	arg_create(char **args, t_philo ***philo)
+void	arg_create(char **args, t_general *gen)
 {
 	int				i;
 	int				size;
 	pthread_mutex_t	*fork;
 
 	size = ft_atol(args[1]);
-	*philo = malloc(sizeof(t_philo *) * (size + 1));
+	gen->philo = malloc(sizeof(t_philo *) * (size + 1));
 	fork = malloc(sizeof(pthread_mutex_t) * size);
+	gen->someone_died = 0;
 	i = -1;
 	while (++i < size)
 		pthread_mutex_init(&fork[i], NULL);
+	pthread_mutex_init(&gen->death_mutex, NULL);
 	i = 0;
 	while (i < size)
 	{
-		(*philo)[i] = malloc(sizeof(t_philo));
-		(*philo)[i]->thread_no = i + 1;
-		(*philo)[i]->time_to_die = ft_atol(args[2]);
-		(*philo)[i]->time_to_eat = ft_atol(args[3]);
-		(*philo)[i]->time_to_sleep = ft_atol(args[4]);
+		gen->philo[i] = malloc(sizeof(t_philo));
+		gen->philo[i]->thread_no = i + 1;
+		gen->philo[i]->time_to_die = ft_atol(args[2]);
+		gen->philo[i]->time_to_eat = ft_atol(args[3]);
+		gen->philo[i]->time_to_sleep = ft_atol(args[4]);
 		if (args[5] == NULL)
-			(*philo)[i]->meat_eat = -1;
+			gen->philo[i]->meat_eat = -1;
 		else
-			(*philo)[i]->meat_eat = ft_atol(args[5]);
-		(*philo)[i]->eat = 0;
-		(*philo)[i]->last_meal_time = 0;
-		(*philo)[i]->is_dead = 0;
-		pthread_mutex_init(&(*philo)[i]->death_mutex, NULL);
-		gettimeofday(&(*philo)[i]->start_time, NULL);
-		(*philo)[i]->left_fork = &fork[i];
-		(*philo)[i]->right_fork = &fork[(i + 1) % size];
+			gen->philo[i]->meat_eat = ft_atol(args[5]);
+		gen->philo[i]->eat = 0;
+		gen->philo[i]->last_meal_time = 0;
+		gettimeofday(&gen->philo[i]->start_time, NULL);
+		gen->philo[i]->left_fork = &fork[i];
+		gen->philo[i]->right_fork = &fork[(i + 1) % size];
+		gen->philo[i]->gen = gen;
 		i++;
 	}
-	(*philo)[i] = NULL;
+	gen->philo[i] = NULL;
 }
 
 int	main(int arg, char **args)
 {
-	int				i;
-	int				size;
-	t_philo			**philo;
-	pthread_mutex_t	*forks;
-	int				status;
+	int i;
+	int size;
+	pthread_mutex_t *forks;
+	int status;
+	t_general gen;
 
 	status = 0;
 	if (!(arg == 5 || arg == 6))
@@ -137,12 +138,12 @@ int	main(int arg, char **args)
 		}
 		i++;
 	}
-	arg_create(args, &philo);
+	arg_create(args, &gen);
 	size = ft_atol(args[1]);
-	status = thread_start(philo, size);
+	status = thread_start(gen.philo, size);
 	if (status == 1)
 		return (1);
-	forks = philo[0]->left_fork; // Fork pointer'ını al
-	cleanup(philo, forks, size);
+	forks = gen.philo[0]->left_fork;
+	cleanup(gen.philo, forks, size);
 	return (0);
 }
