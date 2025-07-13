@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/12 20:14:10 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/13 16:34:30 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,8 +72,7 @@ void	cleanup(t_philo **philo, pthread_mutex_t *forks, int size)
 		free(philo[i]);
 		i++;
 	}
-	// pthread_mutex_destroy(&philo.gen->death_mutex);
-	// pthread_mutex_destroy(&philo[0]>gen->death_mutex);
+	pthread_mutex_destroy(&philo[0]->gen->death_mutex);
 	free(philo);
 	free(forks);
 }
@@ -117,11 +116,11 @@ void	arg_create(char **args, t_general *gen)
 
 int	main(int arg, char **args)
 {
-	int i;
-	int size;
-	pthread_mutex_t *forks;
-	int status;
-	t_general gen;
+	int				i;
+	int				size;
+	pthread_mutex_t	*forks;
+	int				status;
+	t_general		gen;
 
 	status = 0;
 	if (!(arg == 5 || arg == 6))

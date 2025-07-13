@@ -31,7 +31,7 @@ long	ms_usleep(size_t ms, t_philo *philo)
 			return (1);
 		}
 		pthread_mutex_unlock(&philo->gen->death_mutex);
-		usleep(100);
+		usleep(500);
 	}
 	return (0);
 }
@@ -58,7 +58,7 @@ int	check_death(t_philo *philo)
 int	ft_must_eat(t_philo *philo)
 {
 	pthread_mutex_lock(&philo->gen->death_mutex);
-	if (philo->meat_eat != -1 && (philo->meat_eat <= philo->eat))
+	if (philo->meat_eat != -1 && philo->eat >= philo->meat_eat)
 	{
 		pthread_mutex_unlock(&philo->gen->death_mutex);
 		return (1);
@@ -72,26 +72,49 @@ void	*death_monitor(void *arg)
 	t_philo	**philo;
 	int		i;
 	int		total_thread;
+	int		all_ate_enough;
 
 	philo = (t_philo **)arg;
 	total_thread = 0;
 	while (philo[total_thread])
 		total_thread++;
+	
 	while (1)
 	{
-		i = -1;
-		while (++i < total_thread)
+		i = 0;
+		all_ate_enough = 1;
+		
+		// Ölüm kontrolü
+		while (i < total_thread)
 		{
 			if (check_death(philo[i]))
 				return ((void *)1);
+			i++;
 		}
-		i = -1;
-		while (++i < total_thread && ft_must_eat(philo[i]))//ekleme yapıldı
+		
+		// Yemek sayısı kontrolü (eğer belirtilmişse)
+		if (philo[0]->meat_eat != -1)
 		{
-			if (++i == total_thread - 1)
+			i = 0;
+			while (i < total_thread)
+			{
+				pthread_mutex_lock(&philo[i]->gen->death_mutex);
+				if (philo[i]->eat < philo[i]->meat_eat)
+					all_ate_enough = 0;
+				pthread_mutex_unlock(&philo[i]->gen->death_mutex);
+				i++;
+			}
+			
+			if (all_ate_enough)
+			{
+				pthread_mutex_lock(&philo[0]->gen->death_mutex);
+				philo[0]->gen->someone_died = 1;
+				pthread_mutex_unlock(&philo[0]->gen->death_mutex);
 				return ((void *)1);
+			}
 		}
-		usleep(100);
+		
+		usleep(1000);
 	}
 	return ((void *)0);
 }
