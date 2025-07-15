@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/06/29 19:16:46 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/15 13:35:38 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,101 +17,105 @@
 #include <string.h>
 #include <unistd.h>
 
-long	get_ms(t_philo *philo)
+int	check_death_status(t_philo *philo)
 {
-	struct timeval	now;
-	long			seconds;
-	long			useconds;
-
-	gettimeofday(&now, NULL);
-	seconds = now.tv_sec - philo->start_time.tv_sec;
-	useconds = now.tv_usec - philo->start_time.tv_usec;
-	return (seconds * 1000) + (useconds / 1000);
-}
-long	ms_usleep(size_t ms, t_philo *philo)
-{
-	size_t	timeing;
-
-	timeing = get_ms(philo);
-	while (get_ms(philo) - timeing < ms)
+	pthread_mutex_lock(&philo->gen->death_mutex);
+	if (philo->gen->someone_died)
 	{
-		if (check_death(philo))
-			return (1);
-		usleep(100);
-	}
-	if (check_death(philo))
+		pthread_mutex_unlock(&philo->gen->death_mutex);
 		return (1);
+	}
+	pthread_mutex_unlock(&philo->gen->death_mutex);
 	return (0);
 }
-void	print_status(t_philo *philo, char *status)
+
+void	print_action(t_philo *philo, char *action)
 {
-	pthread_mutex_lock(&philo->print_mutex);
-	// Eğer "died" mesajı ise yazdır, sonra is_dead flag'ini set et
-	if (strcmp(status, "died") == 0) // BURAYI FT_STRCMP İLE DEĞİŞTİR
+	pthread_mutex_lock(&philo->gen->death_mutex);
+	if (!philo->gen->someone_died)
+		printf("%ld %d %s\n", get_ms(philo), philo->thread_no, action);
+	pthread_mutex_unlock(&philo->gen->death_mutex);
+}
+
+int	is_single_philosopher(t_philo *philo)
+{
+	// Eğer sol ve sağ çatal aynıysa, tek filozof var demektir
+	return (philo->left_fork == philo->right_fork);
+}
+
+void	single_philosopher_routine(t_philo *philo)
+{
+	// Tek çatalı al
+	pthread_mutex_lock(philo->left_fork);
+	if (check_death_status(philo))
 	{
-		printf("%ld %d %s\n", get_ms(philo), philo->thread_no, status);
-		philo->is_dead = 1;
-		pthread_mutex_unlock(&philo->print_mutex);
+		pthread_mutex_unlock(philo->left_fork);
 		return ;
 	}
-	// Herhangi bir filosof öldüyse diğer mesajları yazdırma
-	if (philo->is_dead)
+	print_action(philo, "has taken a fork");
+	// Ölmeyi bekle (ikinci çatal asla gelmeyecek)
+	while (!check_death_status(philo))
+		usleep(1000);
+	pthread_mutex_unlock(philo->left_fork);
+}
+
+int	taken_fork(t_philo *philo, pthread_mutex_t **first_fork,
+		pthread_mutex_t **second_fork)
+{
+	if (philo->left_fork < philo->right_fork)
 	{
-		pthread_mutex_unlock(&philo->print_mutex);
-		return ;
+		*first_fork = philo->left_fork;
+		*second_fork = philo->right_fork;
 	}
-	printf("%ld %d %s\n", get_ms(philo), philo->thread_no, status);
-	pthread_mutex_unlock(&philo->print_mutex);
+	else
+	{
+		*first_fork = philo->right_fork;
+		*second_fork = philo->left_fork;
+	}
+	pthread_mutex_lock(*first_fork);
+	print_action(philo, "has taken a fork");
+	pthread_mutex_lock(*second_fork);
+	if (check_death_status(philo))
+	{
+		pthread_mutex_unlock(*second_fork);
+		pthread_mutex_unlock(*first_fork);
+		return (1);
+	}
+	print_action(philo, "has taken a fork");
+	return (0);
 }
 
 void	eating(t_philo *philo)
 {
-	// Çatalları mutex ile güvenli şekilde al
-	pthread_mutex_lock(philo->left_fork);
-	print_status(philo, "has taken a fork");
-	pthread_mutex_lock(philo->right_fork);
-	print_status(philo, "has taken a fork");
-	// Yemek yeme
-	philo->last_meal_time = get_ms(philo);
-	print_status(philo, "is eating");
-	philo->eat++;
+	pthread_mutex_t	*first_fork;
+	pthread_mutex_t	*second_fork;
+
+	first_fork = NULL;
+	second_fork = NULL;
+	if (is_single_philosopher(philo))
+	{
+		single_philosopher_routine(philo);
+		return ;
+	}
+	if (taken_fork(philo, &first_fork, &second_fork))
+		return ;
+	pthread_mutex_lock(&philo->gen->death_mutex);
+	if (!philo->gen->someone_died)
+	{
+		philo->eat++;
+		philo->last_meal_time = get_ms(philo);
+		printf("%ld %d %s\n", get_ms(philo), philo->thread_no, "is eating");
+	}
+	pthread_mutex_unlock(&philo->gen->death_mutex);
 	ms_usleep(philo->time_to_eat, philo);
-	// Çatalları bırak
-	pthread_mutex_unlock(philo->right_fork);
-	pthread_mutex_unlock(philo->left_fork);
+	pthread_mutex_unlock(second_fork);
+	pthread_mutex_unlock(first_fork);
 }
 
 void	sleeping(t_philo *philo)
 {
-	philo->sleep++;
-	print_status(philo, "is sleeping");
+	print_action(philo, "is sleeping");
 	ms_usleep(philo->time_to_sleep, philo);
-}
-
-void	thinking(t_philo *philo)
-{
-	print_status(philo, "is thinking");
-}
-
-int	check_death(t_philo *philo)
-{
-	pthread_mutex_lock(&philo->death_mutex);
-	if (philo->is_dead)
-	{
-		pthread_mutex_unlock(&philo->death_mutex);
-		return (1);
-	}
-	if (get_ms(philo) - philo->last_meal_time > philo->time_to_die)
-	{
-		//  printf("BURADA OLDU:%ld - lmt(%ld) > ttd(%ld)\n", get_ms(philo),
-		// 		philo->last_meal_time, philo->time_to_die / 1000);
-		philo->is_dead = 1;
-		pthread_mutex_unlock(&philo->death_mutex);
-		print_status(philo, "died");
-		return (1);
-	}
-	pthread_mutex_unlock(&philo->death_mutex);
-	return (0);
 }
 
 void	*thread_loop(void *arg)
@@ -119,61 +123,31 @@ void	*thread_loop(void *arg)
 	t_philo	*philo;
 
 	philo = (t_philo *)arg;
+	if (philo->thread_no % 2 == 0)
+		usleep(1000);
+	// Tek filozof durumu - sadece eating'e git
+	if (is_single_philosopher(philo))
+	{
+		eating(philo);
+		return (NULL);
+	}
 	while (1)
 	{
-		if (philo->thread_no % 2 != 0)
+		if (check_death_status(philo))
+			break ;
+		// Yemek sayısı kontrolü
+		pthread_mutex_lock(&philo->gen->death_mutex);
+		if (philo->meat_eat != -1 && philo->eat >= philo->meat_eat)
 		{
-			if (philo->sleep == philo->eat)
-				eating(philo);
-			else
-			{
-				sleeping(philo);
-				thinking(philo);
-			}
+			pthread_mutex_unlock(&philo->gen->death_mutex);
+			break ;
 		}
-		else
-		{
-			if (philo->sleep != philo->eat)
-				eating(philo);
-			else
-			{
-				sleeping(philo);
-				thinking(philo);
-			}
-		}
+		pthread_mutex_unlock(&philo->gen->death_mutex);
+		print_action(philo, "is thinking");
+		eating(philo);
+		sleeping(philo);
 	}
 	return (NULL);
-}
-
-void	*death_monitor(void *arg)
-{
-	t_philo	**philo;
-	int		i;
-	int		total_thread;
-
-	philo = (t_philo **)arg;
-	total_thread = 0;
-	while (philo[total_thread])
-		total_thread++;
-	while (1)
-	{
-		i = 0;
-		while (i < total_thread)
-		{
-			if (check_death(philo[i]))
-				return ((void *)1);
-			i++;
-		}
-		i = 0;
-		while (philo[i]->meat_eat != -1 && philo[i]->meat_eat <= philo[i]->eat)
-		{
-			if (i == total_thread - 1)
-				return ((void *)1);
-			i++;
-		}
-		usleep(100);
-	}
-	return ((void *)0);
 }
 
 int	thread_start(t_philo **philo, int total_thread)
@@ -184,18 +158,16 @@ int	thread_start(t_philo **philo, int total_thread)
 	int			exit_c;
 
 	i = -1;
-	if (total_thread % 2 == 0)
-	{
-		while (++i < total_thread)
-			pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
-	}
+	while (++i < total_thread)
+		pthread_create(&philo[i]->thread, NULL, thread_loop, philo[i]);
 	pthread_create(&monitor_thread, NULL, death_monitor, philo);
 	pthread_join(monitor_thread, &exit_code);
 	exit_c = (int)(__intptr_t)exit_code;
-	if (exit_c == 1)
-		return (1);
 	i = -1;
 	while (++i < total_thread)
 		pthread_join(philo[i]->thread, NULL);
-	return (0);
+	if (exit_c == 1)
+		return (1);
+	else
+		return (0);
 }
