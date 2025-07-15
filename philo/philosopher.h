@@ -32,6 +32,5 @@ int					check_death(t_philo *philo);
 void				*death_monitor(void *arg);
 long				get_ms(t_philo *philo);
 long				ms_usleep(size_t ms, t_philo *philo);
-int					ft_must_eat(t_philo *philo);
 
 #endif
