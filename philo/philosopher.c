@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/15 13:36:11 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/15 19:20:20 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,24 +59,6 @@ long	ft_numeric(const char *str)
 			return (0);
 	}
 	return (1);
-}
-
-void	cleanup(t_philo **philo, pthread_mutex_t *forks, t_general *gen,
-		int size)
-{
-	int	i;
-
-	i = 0;
-	while (i < size)
-	{
-		pthread_mutex_destroy(&forks[i]);
-		free(philo[i]);
-		i++;
-	}
-	pthread_mutex_destroy(&gen->death_mutex);
-	free(philo);
-	free(forks);
-	free(gen);
 }
 
 pthread_mutex_t	*fork_create(t_general **gen, int size)
@@ -141,13 +123,7 @@ int	main(int arg, char **args)
 		i++;
 	}
 	arg_create(args, &gen, ft_atol(args[1]));
-	status = thread_start(gen->philo, ft_atol(args[1]));
-	if (status == 1)
-	{
-		forks = gen->philo[0]->left_fork;
-		cleanup(gen->philo, forks, gen, ft_atol(args[1]));
-		return (1);
-	}
+	thread_start(gen->philo, ft_atol(args[1]));
 	forks = gen->philo[0]->left_fork;
 	cleanup(gen->philo, forks, gen, ft_atol(args[1]));
 }

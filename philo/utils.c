@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/15 17:28:17 by musyilma          #+#    #+#             */
+/*   Updated: 2025/07/15 19:20:10 by musyilma         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosopher.h"
 #include <limits.h>
 #include <stdio.h>
@@ -14,7 +26,7 @@ long	get_ms(t_philo *philo)
 	gettimeofday(&now, NULL);
 	seconds = now.tv_sec - philo->start_time.tv_sec;
 	useconds = now.tv_usec - philo->start_time.tv_usec;
-	return (seconds * 1000) + (useconds / 1000);
+	return ((seconds * 1000) + (useconds / 1000));
 }
 
 long	ms_usleep(size_t ms, t_philo *philo)
@@ -100,12 +112,12 @@ void	*death_monitor(void *arg)
 		while (i < total_thread)
 		{
 			if (check_death(philo[i]))
-				return ((void *)1);
+				return NULL ;
 			i++;
 		}
 		if (ft_must_eat(philo, total_thread, all_ate_enough))
-			return ((void *)1);
+			break ;
 		usleep(1000);
 	}
-	return ((void *)0);
+	return (NULL);
 }
