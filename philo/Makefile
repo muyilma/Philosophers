@@ -2,7 +2,7 @@ NAME=philo
 
 CFLAGS=-g  -Wall -Wextra -Werror -fsanitize=thread
 
-SRC=philosopher.c actions.c utils.c
+SRC=philosopher.c actions.c utils.c util2.c
 
 OBJ=$(SRC:.c=.o)
 
