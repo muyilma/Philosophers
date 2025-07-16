@@ -6,7 +6,7 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 17:28:09 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/15 18:56:16 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/16 11:06:52 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ typedef struct s_general
 	t_philo				**philo;
 }						t_general;
 
-void						thread_start(t_philo **philo, int total_thread);
+void					thread_start(t_philo **philo, int total_thread);
 int						check_death_status(t_philo *philo);
 void					*death_monitor(void *arg);
 long					get_ms(t_philo *philo);

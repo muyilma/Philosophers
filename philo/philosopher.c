@@ -6,15 +6,13 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/15 19:20:20 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/16 13:33:28 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosopher.h"
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 long	ft_atol(const char *str)
 {
@@ -110,9 +108,7 @@ int	main(int arg, char **args)
 	pthread_mutex_t	*forks;
 	t_general		*gen;
 	int				i;
-	int				status;
 
-	status = 0;
 	if (!(arg == 5 || arg == 6))
 		return (printf("Wrong argument count\n"), 1);
 	i = 1;

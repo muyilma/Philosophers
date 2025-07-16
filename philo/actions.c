@@ -6,21 +6,18 @@
 /*   By: musyilma <musyilma@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/28 10:33:54 by musyilma          #+#    #+#             */
-/*   Updated: 2025/07/15 19:21:48 by musyilma         ###   ########.fr       */
+/*   Updated: 2025/07/16 19:59:07 by musyilma         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosopher.h"
-#include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 int	taken_fork(t_philo *philo, pthread_mutex_t **first_fork,
 		pthread_mutex_t **second_fork)
 {
-	if (philo->left_fork < philo->right_fork)
+	if (philo->thread_no % 2 == 1)
 	{
 		*first_fork = philo->left_fork;
 		*second_fork = philo->right_fork;
@@ -32,6 +29,11 @@ int	taken_fork(t_philo *philo, pthread_mutex_t **first_fork,
 	}
 	pthread_mutex_lock(*first_fork);
 	print_action(philo, "has taken a fork");
+	if (check_death_status(philo))
+	{
+		pthread_mutex_unlock(*first_fork);
+		return (1);
+	}
 	pthread_mutex_lock(*second_fork);
 	if (check_death_status(philo))
 	{
@@ -74,13 +76,13 @@ void	*single_thread(void *arg)
 	if (check_death_status(philo))
 	{
 		pthread_mutex_unlock(philo->left_fork);
-		return ((void *)1);
+		return (NULL);
 	}
 	print_action(philo, "has taken a fork");
 	while (!check_death_status(philo))
 		usleep(1000);
 	pthread_mutex_unlock(philo->left_fork);
-	return ((void *)0);
+	return (NULL);
 }
 
 void	*thread_loop(void *arg)
@@ -94,20 +96,16 @@ void	*thread_loop(void *arg)
 	{
 		if (check_death_status(philo))
 			break ;
-		pthread_mutex_lock(&philo->gen->death_mutex);
-		if (philo->meat_eat != -1 && philo->eat >= philo->meat_eat)
-		{
-			pthread_mutex_unlock(&philo->gen->death_mutex);
-			break ;
-		}
-		pthread_mutex_unlock(&philo->gen->death_mutex);
 		print_action(philo, "is thinking");
 		eating(philo);
 		print_action(philo, "is sleeping");
+		if (check_death_status(philo))
+			break ;
 		ms_usleep(philo->time_to_sleep, philo);
 	}
 	return (NULL);
 }
+
 void	thread_start(t_philo **philo, int total_thread)
 {
 	int			i;
