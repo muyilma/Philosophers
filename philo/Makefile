@@ -1,6 +1,6 @@
 NAME=philo
 
-CFLAGS=-Wall -Wextra -Werror -fsanitize=thread
+CFLAGS=-Wall -Wextra -Werror 
 
 SRC=philosopher.c actions.c utils.c monitor_and_utils.c
 
